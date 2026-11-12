@@ -135,12 +135,12 @@ fps on the real hardware, with sound on every boot.
 <a href="https://github.com/kooscode/oxos"><img src="docs/images/oxos_boot.jpg" width="240" align="right"
     alt="The OXOS boot screen"></a>
 
-**Made possible by OXOS.** None of this test loop would exist without [OXOS](https://github.com/kooscode/oxos), the
-open-source Xbox kernel. The stock kernel throws away a game's debug output. OXOS's serial kernel sends it, with its
-own log and a full register and stack dump on any crash, out of COM1 to the PC, on the console and in xemu alike.
-Its netboot and FTP app put each build on the console with no one there, and its open BIOS images boot xemu without
-an MCPX boot ROM. Every hardware bug above was tracked down from those serial logs: they were the only view inside
-the game running on a real Xbox. Thank you, OXOS!
+$\color{#39FF14}\textbf{Made possible by OXOS.}$ None of this test loop would exist without
+[OXOS](https://github.com/kooscode/oxos), the open-source Xbox kernel. The stock kernel throws away a game's debug
+output. OXOS's serial kernel sends it, with its own log and a full register and stack dump on any crash, out of COM1 to
+the PC, on the console and in xemu alike. Its netboot and FTP app put each build on the console with no one there, and
+its open BIOS images boot xemu without an MCPX boot ROM. Every hardware bug above was tracked down from those serial
+logs: they were the only view inside the game running on a real Xbox. Thank you, OXOS!
 
 ## Credits and license
 

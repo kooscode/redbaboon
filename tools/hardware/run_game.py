@@ -20,9 +20,9 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOGS = os.path.normpath(os.path.join(HERE, "..", "..", "captures", "serial"))  # local, not in git
-OXOS = os.environ.get("OXOS_DIR", "")
+OXOS = os.path.normpath(os.path.join(HERE, "..", "..", "third_party", "oxos"))  # submodule
 KERNEL = os.path.join(HERE, "..", "xemu", "bios", "oxos_serial_256k.bin")
-FTP_APP = os.path.join(OXOS, "tools", "ftp_server", "bin")
+FTP_APP = os.path.normpath(os.path.join(HERE, "..", "..", "build", "FtpServer"))  # make ftp_app
 NETBOOT = os.path.join(OXOS, "tools", "netboot", "netboot.py")
 CONSOLE = [sys.executable, "-I", os.path.join(OXOS, "tools", "modxo", "console.py")]
 
@@ -221,14 +221,16 @@ def main():
     ap.add_argument("--name", default="RedBaboon", help="folder under F:\\Games")
     ap.add_argument("--ip", default=DEFAULT_IP)
     args = ap.parse_args()
-    if not os.path.isdir(OXOS):
-        raise SystemExit("set OXOS_DIR to the OXOS checkout (see docs/hardware.md)")
+    if not os.path.isfile(NETBOOT):
+        raise SystemExit("third_party/oxos is missing: git submodule update --init --recursive")
+    if not os.path.isfile(os.path.join(FTP_APP, "default.xbe")):
+        raise SystemExit("the FTP app is not built: make ftp_app")
     if not os.path.isfile(os.path.join(args.bin_dir, "default.xbe")):
         raise SystemExit(f"{args.bin_dir}: no default.xbe")
     serial = logger_file()
     if not serial:
-        raise SystemExit("the Modxo logger is not running: python3 -I tools/modxo/console.py log --out FILE "
-                         f"(in {OXOS}); the console does not boot without it")
+        raise SystemExit("the Modxo logger is not running: python3 -I third_party/oxos/tools/modxo/console.py log "
+                         "--out FILE; the console does not boot without it")
     if netboot_running():
         raise SystemExit("another netboot server is running; stop it first")
 

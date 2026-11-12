@@ -45,17 +45,17 @@ The full list is in [docs/design.md](docs/design.md) §3; the game shows it too,
 
 ## Building
 
-You need:
-- nxdk with its tools built (`make -C $NXDK_DIR tools`), and clang and lld on `PATH` (LLVM 18 is known to work);
-- the SDL3 submodule: `git submodule update --init --recursive`;
-- for the host tests, g++ or clang.
+Everything the build uses is in this repository: nxdk, SDL3 for nxdk and OXOS (for the test rigs) are submodules in
+`third_party/`. From the system you need only clang and lld on `PATH` (LLVM 18 is known to work), a host C/C++
+compiler for nxdk's tools and the host tests, and CMake (nxdk's extract-xiso). Once:
 
-Tell the Makefile where nxdk is, in the environment or in a `local.mk` (not in git) next to the Makefile:
-
-```make
-NXDK_DIR = /path/to/nxdk
-export PATH := /usr/lib/llvm-18/bin:$(PATH)
+```sh
+git submodule update --init --recursive   # nxdk (and its libraries), nxdk-sdl3, OXOS
+make nxdk_tools                           # builds nxdk's tools in third_party/nxdk
 ```
+
+If clang is not on `PATH`, add it in a `local.mk` (not in git) next to the Makefile:
+`export PATH := /usr/lib/llvm-18/bin:$(PATH)`.
 
 Then:
 
@@ -68,6 +68,8 @@ Then:
 | `make preview` | renders the procedural meshes and textures to PNG files in `build/preview/` |
 | `make audio_render` | renders every sound effect and music track to WAV files in `build/audio/` |
 | `make audio_game` | runs the game's audio through a whole mission on the PC: `build/audio/game_path.wav` |
+| `make ftp_app` | the OXOS FTP app the hardware rig netboots: `build/FtpServer/` |
+| `make nxdk_tools` | builds nxdk's tools in `third_party/nxdk` (once, after cloning) |
 | `make clean` | deletes `build/` |
 
 Everything a build writes goes under `build/`.
@@ -80,7 +82,7 @@ Everything a build writes goes under `build/`.
   from your dashboard.
 - **Development rigs:** `make xemu` boots the game in xemu on the [OXOS](https://github.com/kooscode/oxos) kernel
   with its serial log ([docs/xemu.md](docs/xemu.md)); `make hardware` installs, runs and records it on a real Xbox
-  with a Modxo modchip ([docs/hardware.md](docs/hardware.md)). Both need an OXOS checkout (`OXOS_DIR`).
+  with a Modxo modchip ([docs/hardware.md](docs/hardware.md)). Both use the OXOS submodule's tools.
 - **Self-play:** an `autoplay.txt` next to `default.xbe` makes the game fly itself, for testing and recordings;
   `seed=fixed` in it gives the same mission every run ([docs/design.md](docs/design.md) §9).
 
@@ -99,7 +101,9 @@ Everything a build writes goes under `build/`.
 | `tools/preview/` | host preview of the procedural content (a small software rasteriser) |
 | `tools/xemu/`, `tools/hardware/` | the xemu and real-Xbox test rigs |
 | `docs/` | design, C++ style, the rigs, and the creative brief and reviews (`docs/creative/`) |
+| `third_party/nxdk/` | [nxdk](https://github.com/kooscode/nxdk) with a pbkit cold-boot fix (submodule) |
 | `third_party/nxdk-sdl3/` | SDL3 for nxdk (submodule) |
+| `third_party/oxos/` | [OXOS](https://github.com/kooscode/oxos): xemu launcher, netboot, FTP app (submodule) |
 
 The code follows [docs/cpp_style.md](docs/cpp_style.md).
 

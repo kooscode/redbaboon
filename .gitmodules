@@ -1,3 +1,11 @@
 [submodule "third_party/nxdk-sdl3"]
 	path = third_party/nxdk-sdl3
 	url = https://github.com/Ryzee119/nxdk-sdl3.git
+[submodule "third_party/nxdk"]
+	path = third_party/nxdk
+	url = https://github.com/kooscode/nxdk.git
+	ignore = dirty
+	branch = pbkit-context-save-fix
+[submodule "third_party/oxos"]
+	path = third_party/oxos
+	url = https://github.com/kooscode/oxos.git

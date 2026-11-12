@@ -5,8 +5,8 @@ no one at the console. They need:
 
 - a console with a [Modxo](https://github.com/shalxmva/modxo) modchip (RP2040 on the LPC bus, USB to the PC): it
   serves the BIOS, forwards the debug serial port (COM1) and presses the power button;
-- an [OXOS](https://github.com/kooscode/oxos) checkout (`OXOS_DIR`) for its netboot server, its FTP app and the Modxo
-  logger and power control (`tools/modxo/console.py`);
+- the [OXOS](https://github.com/kooscode/oxos) submodule (`third_party/oxos`) for its netboot server, its FTP app
+  (built by `make ftp_app` into `build/FtpServer`) and the Modxo logger and power control (`tools/modxo/console.py`);
 - the OXOS serial kernel in `tools/xemu/bios/oxos_serial_256k.bin` (docs/xemu.md §1);
 - optionally, a USB capture card (MS2109) for recordings.
 
@@ -17,7 +17,7 @@ Nothing on the console is flashed.
 ```sh
 make hardware                                                # install to F:\Games\RedBaboon, run 120 s, power off
 make hardware ARGS="--seconds 300 --record captures/run.mp4" # ... and record the capture card meanwhile
-tools/hardware/run_game.sh build/RedBaboon [OPTIONS]         # the same without make (needs OXOS_DIR)
+tools/hardware/run_game.sh build/RedBaboon [OPTIONS]         # the same without make (after make ftp_app)
 ```
 
 The game stays installed: at the next normal power-on, the console's own BIOS boots the dashboard, which lists it
@@ -62,7 +62,7 @@ install meant for playing: `run_game.py` mirrors the folder, so a build without 
 ## 4. Serial log
 
 - The serial kernel sends its log, and the game's `DbgPrint` text, to COM1, which the Modxo forwards over USB.
-- The OXOS Modxo logger (`$OXOS_DIR/tools/modxo/console.py log --out FILE`) must be running: the console does not
+- The OXOS Modxo logger (`third_party/oxos/tools/modxo/console.py log --out FILE`) must be running: the console does not
   boot while nobody holds the Modxo's serial port. `run_game.py` finds the logger's file and copies each run's part
   of it. Kernel and game lines are prefixed `uart`; the modchip's own status lines are dropped.
 - A crash shows up as `*** unhandled exception ...` with registers and stack, then `*** bug check`.
@@ -70,7 +70,8 @@ install meant for playing: `run_game.py` mirrors the folder, so a build without 
 
 ## 5. Power
 
-- `python3 -I $OXOS_DIR/tools/modxo/console.py state | on | off` (with the logger running). `run_game.py` uses these.
+- `python3 -I third_party/oxos/tools/modxo/console.py state | on | off` (with the logger running); `run_game.py` uses
+  these.
 - Leave the console off after a run; `run_game.py` does this unless `--keep-on`.
 - Only one netboot server at a time: `run_game.py` refuses to start when one is running, and its own server exits
   after one boot.
@@ -80,11 +81,11 @@ install meant for playing: `run_game.py` mirrors the folder, so a build without 
 Boot the FTP app without launching anything, then delete the folder (one `-Q` per file, folders last):
 
 ```sh
-cd $OXOS_DIR
-python3 -I tools/netboot/netboot.py REDBABOON/tools/xemu/bios/oxos_serial_256k.bin \
-    --title tools/ftp_server/bin --title-name ftp --to BROADCAST_ADDRESS --once &
-python3 -I tools/modxo/console.py on
+make ftp_app
+python3 -I third_party/oxos/tools/netboot/netboot.py tools/xemu/bios/oxos_serial_256k.bin \
+    --title build/FtpServer --title-name ftp --to BROADCAST_ADDRESS --once &
+python3 -I third_party/oxos/tools/modxo/console.py on
 # about 20 s later:
 curl ftp://CONSOLE_ADDRESS/ -u x:x -Q "DELE /F/Games/RedBaboon/default.xbe" -Q "RMD /F/Games/RedBaboon"
-python3 -I tools/modxo/console.py off
+python3 -I third_party/oxos/tools/modxo/console.py off
 ```

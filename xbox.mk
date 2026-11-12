@@ -8,8 +8,10 @@
 #   OUTPUT_DIR  the folder that receives default.xbe
 #   APP_SRCS    the title's .cpp files (absolute paths under ROOT)
 #   SDL3        y to link SDL3 from third_party/nxdk-sdl3
+#   NET         y to link nxdk's network stack (lwIP)
 
 NXDK_CXX = y
+NXDK_NET = $(NET)
 SRCS := $(APP_SRCS)
 OBJ_DIR := $(CURDIR)/obj
 GEN_DIR := $(CURDIR)/gen

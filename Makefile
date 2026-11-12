@@ -9,19 +9,22 @@
 #   make audio_game      run the game's audio through a whole mission on the host: build/audio/game_path.wav
 #   make preview         render the procedural meshes and textures to PNG files in build/preview/
 #   make xemu            run the game in xemu (tools/xemu, docs/xemu.md)
+#   make ftp_app         the OXOS FTP app that the hardware rig netboots: build/FtpServer/
 #   make hardware        install and run the game on a real Xbox (tools/hardware, docs/hardware.md); ARGS=... adds
 #                        options, e.g. make hardware ARGS="--seconds 60 --record captures/run.mp4"
+#   make nxdk_tools      build nxdk's host tools (cxbe, the shader compilers, extract-xiso) in third_party/nxdk, once
 #   make clean           remove build/
 #
-# The Xbox builds need nxdk (https://github.com/XboxDev/nxdk) with its tools built, and clang and lld on PATH.
-# Set NXDK_DIR (and OXOS_DIR for the xemu and hardware rigs) in the environment or in local.mk, which is not in git:
-#   NXDK_DIR = /path/to/nxdk
-#   OXOS_DIR = /path/to/oxos
+# Everything comes from this folder: nxdk, SDL3 for nxdk and OXOS (the xemu and hardware rigs' tools) are submodules
+# in third_party/ (git submodule update --init --recursive), and nxdk's tools are built in place once
+# (make nxdk_tools). Only clang and lld come from the system: put them on PATH, or in local.mk (not in git):
 #   export PATH := /usr/lib/llvm-18/bin:$(PATH)
 
 ROOT := $(realpath $(CURDIR))
 BUILD := $(ROOT)/build
 -include $(ROOT)/local.mk
+NXDK_DIR := $(ROOT)/third_party/nxdk
+OXOS_DIR := $(ROOT)/third_party/oxos
 export NXDK_DIR OXOS_DIR
 export PATH := $(NXDK_DIR)/bin:$(PATH)
 
@@ -29,15 +32,21 @@ GAME_SRCS = $(sort $(wildcard $(ROOT)/src/*.cpp $(ROOT)/src/*/*.cpp))
 GAME_HDRS = $(wildcard $(ROOT)/src/*/*.h)
 XBOX_MAKE = $(MAKE) --no-print-directory -f $(ROOT)/xbox.mk ROOT=$(ROOT)
 
-.PHONY: all game iso demos render_demo audio_demo test audio_render audio_game preview xemu hardware clean \
-        check_nxdk
+.PHONY: all game iso demos render_demo audio_demo ftp_app test audio_render audio_game preview xemu hardware clean \
+        check_nxdk nxdk_tools
 all: game
 
 # --- Xbox titles
 
 check_nxdk:
-	@test -f "$(NXDK_DIR)/Makefile" || { echo "NXDK_DIR is not set to an nxdk checkout (see the top of Makefile)"; \
+	@test -f "$(NXDK_DIR)/Makefile" || { echo "third_party/nxdk is missing: git submodule update --init --recursive"; \
 	    exit 1; }
+	@test -x "$(NXDK_DIR)/tools/cxbe/cxbe" || { echo "nxdk's tools are not built: make nxdk_tools"; exit 1; }
+
+nxdk_tools:
+	@test -f "$(NXDK_DIR)/Makefile" || { echo "third_party/nxdk is missing: git submodule update --init --recursive"; \
+	    exit 1; }
+	+$(MAKE) -C $(NXDK_DIR) NXDK_DIR=$(NXDK_DIR) tools
 
 game: check_nxdk
 	@mkdir -p $(BUILD)/obj/game
@@ -59,6 +68,11 @@ audio_demo: check_nxdk
 	@mkdir -p $(BUILD)/obj/audio_demo
 	+$(XBOX_MAKE) -C $(BUILD)/obj/audio_demo XBE_TITLE=AudioDemo OUTPUT_DIR=$(BUILD)/AudioDemo \
 	    APP_SRCS="$(wildcard $(ROOT)/src/audio/*.cpp) $(ROOT)/tests/audio_demo/main.cpp"
+
+ftp_app: check_nxdk
+	@mkdir -p $(BUILD)/obj/ftp_server
+	+$(XBOX_MAKE) -C $(BUILD)/obj/ftp_server XBE_TITLE="OXOS FTP server" OUTPUT_DIR=$(BUILD)/FtpServer NET=y \
+	    APP_SRCS="$(OXOS_DIR)/tools/ftp_server/ftp_server.cpp"
 
 # --- Host programs (g++ or clang on the PC)
 
@@ -115,7 +129,7 @@ $(BUILD)/tools/preview: $(PREVIEW_SRCS) $(GAME_HDRS) $(ROOT)/tools/preview/raste
 xemu: game
 	$(ROOT)/tools/xemu/run_game.sh $(BUILD)/RedBaboon $(ARGS)
 
-hardware: game
+hardware: game ftp_app
 	$(ROOT)/tools/hardware/run_game.sh $(BUILD)/RedBaboon $(ARGS)
 
 clean:

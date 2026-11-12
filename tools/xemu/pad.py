@@ -11,19 +11,20 @@
       pad.py send quit                 remove the pad
 
 Buttons: A B X Y LB RB BACK START GUIDE LS RS. Axes: LX LY RX RY (-32768..32767), LT RT (0..255), HATX HATY (-1..1).
-Uses the OXOS tests' VirtualPad ($OXOS_DIR/tests/virtual_gamepad.py); needs write access to /dev/uinput.
+Uses the OXOS tests' VirtualPad (third_party/oxos/tests/virtual_gamepad.py); needs write access to /dev/uinput.
 """
 import os
 import signal
 import sys
 import time
 
-if not os.path.isdir(os.environ.get("OXOS_DIR", "")):
-    sys.exit("set OXOS_DIR to the OXOS checkout (see docs/xemu.md)")
-sys.path.insert(0, os.path.join(os.environ["OXOS_DIR"], "tests"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+OXOS_TESTS = os.path.normpath(os.path.join(HERE, "..", "..", "third_party", "oxos", "tests"))
+if not os.path.isfile(os.path.join(OXOS_TESTS, "virtual_gamepad.py")):
+    sys.exit("third_party/oxos is missing: git submodule update --init --recursive")
+sys.path.insert(0, OXOS_TESTS)
 from virtual_gamepad import AXES, BUTTONS, VirtualPad  # noqa: E402
 
-HERE = os.path.dirname(os.path.abspath(__file__))
 FIFO = os.path.join(HERE, "run", "pad.fifo")
 TAP_SECONDS = 0.15  # how long "press" holds a button when the command gives no time
 

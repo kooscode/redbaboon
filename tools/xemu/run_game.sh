@@ -1,6 +1,6 @@
 #!/bin/sh
 # Boot xemu on OXOS straight into an nxdk game: the bin folder becomes an XISO in the DVD drive, and OXOS starts the
-# disc's default.xbe at power-on. See ../XEMU_HOWTO.md.
+# disc's default.xbe at power-on. See docs/xemu.md.
 #
 #   run_game.sh BIN_DIR [--release | --bios FILE] [--memory 64|128] [--fresh] [--pad] [-- RUN.PY-ARGS...]
 #     BIN_DIR        the nxdk build output: default.xbe and the files it loads from D:\
@@ -9,15 +9,18 @@
 #     --memory N     console RAM in MB (default 64, a retail console)
 #     --fresh        start the disk over from the template (wipes saves and anything copied to it)
 #     --pad          create the virtual controller first (pad.py serve) and make xemu see only it
-#     -- ARGS        passed to $OXOS_DIR/tools/run.py (e.g. -- --scale 2 --widescreen)
+#     -- ARGS        passed to OXOS's tools/run.py (third_party/oxos) (e.g. -- --scale 2 --widescreen)
 #
 # Everything this rig writes is under tools/xemu/run/: game.iso, state/ (the persistent disk copy + EEPROM),
 # qmp.sock, pad.fifo, logs/. The serial log is printed here and saved in run/logs/. Close the xemu window, or kill
 # this script, to stop.
 set -eu
 RIG=$(cd "$(dirname "$0")" && pwd)
-OXOS=${OXOS_DIR:?set OXOS_DIR to the OXOS checkout (see docs/xemu.md)}
-export OXOS_DIR
+OXOS=$(cd "$RIG/../../third_party/oxos" && pwd)
+if [ ! -f "$OXOS/tools/run.py" ]; then
+    echo "third_party/oxos is missing: git submodule update --init --recursive" >&2
+    exit 1
+fi
 RUN="$RIG/run"
 
 if [ $# -lt 1 ] || [ ! -f "$1/default.xbe" ]; then

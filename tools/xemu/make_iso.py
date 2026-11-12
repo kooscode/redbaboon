@@ -4,17 +4,17 @@
 usage: make_iso.py BIN_DIR OUT.iso
 
 OXOS boots \\Device\\CdRom0\\default.xbe at power-on when a disc is in the drive, so the game starts directly.
-Uses the XISO writer of the OXOS tests ($OXOS_DIR/tests/mkxiso.py).
+Uses the XISO writer of the OXOS tests (third_party/oxos/tests/mkxiso.py).
 """
 import os
 import sys
 
 
 def oxos_dir():
-    """The OXOS checkout (OXOS_DIR in the environment; the Makefile sets it from local.mk)."""
-    path = os.environ.get("OXOS_DIR")
-    if not path or not os.path.isdir(path):
-        sys.exit("set OXOS_DIR to the OXOS checkout (see docs/xemu.md)")
+    """The OXOS submodule (third_party/oxos)."""
+    path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "third_party", "oxos"))
+    if not os.path.isfile(os.path.join(path, "tests", "mkxiso.py")):
+        sys.exit("third_party/oxos is missing: git submodule update --init --recursive")
     return path
 
 

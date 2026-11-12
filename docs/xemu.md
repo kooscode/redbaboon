@@ -2,8 +2,8 @@
 
 The rig in `tools/xemu/` boots [xemu](https://xemu.app) on the [OXOS](https://github.com/kooscode/oxos) kernel
 straight into a build of the game: the build folder becomes an XISO in the DVD drive, and OXOS starts its
-`default.xbe` at power-on, with no dashboard, FTP or network step. The rig uses three things from an OXOS checkout
-(`OXOS_DIR`): `tools/run.py`, which starts xemu, and two test helpers, the XISO writer and the virtual gamepad.
+`default.xbe` at power-on, with no dashboard, FTP or network step. The rig uses three things from the OXOS submodule
+(`third_party/oxos`): `tools/run.py`, which starts xemu, and two test helpers, the XISO writer and the virtual gamepad.
 
 To just play the game in your own xemu, `make iso` and load `build/RedBaboon.iso` (Machine > Load Disc) instead.
 
@@ -12,7 +12,7 @@ To just play the game in your own xemu, `make iso` and load `build/RedBaboon.iso
 ```sh
 make xemu                                 # build, then boot it in xemu
 make xemu ARGS=--pad                      # ... with a virtual controller you can drive (see Input)
-tools/xemu/run_game.sh build/RedBaboon    # the same without make (needs OXOS_DIR in the environment)
+tools/xemu/run_game.sh build/RedBaboon    # the same without make
 ```
 
 `run_game.sh BIN_DIR` packs the folder into `tools/xemu/run/game.iso`, puts it in xemu's DVD drive and boots. The
@@ -20,7 +20,7 @@ game comes up about 10 s later. Its files are on `D:\` as on a real disc. Close 
 script) to stop.
 
 Options: `--release` (kernel without serial log), `--memory 128`, `--fresh` (reset the disk), `--pad`, and `-- ARGS`
-for `$OXOS_DIR/tools/run.py` (e.g. `-- --scale 2`, `-- --widescreen`).
+for OXOS's `tools/run.py` (e.g. `-- --scale 2`, `-- --widescreen`).
 
 ## 1. Setting up the rig
 
@@ -33,26 +33,26 @@ The rig's kernels and disk are not in git; put them in place once:
 | `tools/xemu/disk/oxos_exfat_template.qcow2` | an OXOS exFAT test disk (see "The disk") |
 
 The kernels are OXOS's own open images: **no MCPX boot ROM is needed** (xemu's `bootrom_path` stays empty and xemu
-starts in OXOS's reset code). Build them in the OXOS checkout:
+starts in OXOS's reset code). Build them from the OXOS submodule:
 
 ```sh
-make -C $OXOS_DIR/kernel BUILD=/tmp/rb_rel SELFTEST=0 /tmp/rb_rel/bios_256k.bin
-make -C $OXOS_DIR/kernel BUILD=/tmp/rb_ser SELFTEST=0 SERIAL=1 /tmp/rb_ser/bios_256k.bin
-cp /tmp/rb_rel/bios_256k.bin tools/xemu/bios/oxos_release_256k.bin
-cp /tmp/rb_ser/bios_256k.bin tools/xemu/bios/oxos_serial_256k.bin
+make -C third_party/oxos/kernel BUILD=$PWD/build/oxos/rel SELFTEST=0 $PWD/build/oxos/rel/bios_256k.bin
+make -C third_party/oxos/kernel BUILD=$PWD/build/oxos/ser SELFTEST=0 SERIAL=1 $PWD/build/oxos/ser/bios_256k.bin
+cp build/oxos/rel/bios_256k.bin tools/xemu/bios/oxos_release_256k.bin
+cp build/oxos/ser/bios_256k.bin tools/xemu/bios/oxos_serial_256k.bin
 ```
 
 **The disk:** `oxos_exfat_template.qcow2` is one exFAT volume whose top-level folders are the drives
 (`/C /E /F /X /Y /Z`). The first run copies it to `tools/xemu/run/state/hdd.qcow2`, which keeps saves (`E:\UDATA`,
 `E:\TDATA`) between runs; `--fresh` starts over from the template. To look inside with xemu stopped:
-`python3 -I $OXOS_DIR/tests/exfat.py --ls tools/xemu/run/state/hdd.qcow2 /E/UDATA`.
+`python3 -I third_party/oxos/tests/exfat.py --ls tools/xemu/run/state/hdd.qcow2 /E/UDATA`.
 
 ## 2. The xemu command line
 
 `run_game.sh` runs (serial kernel, 64 MB):
 
 ```sh
-python3 -I $OXOS_DIR/tools/run.py tools/xemu/bios/oxos_serial_256k.bin --iso tools/xemu/run/game.iso \
+python3 -I third_party/oxos/tools/run.py tools/xemu/bios/oxos_serial_256k.bin --iso tools/xemu/run/game.iso \
     --hdd tools/xemu/disk/oxos_exfat_template.qcow2 --state tools/xemu/run/state --memory 64 \
     --qmp tools/xemu/run/qmp.sock --serial
 ```
@@ -80,9 +80,10 @@ python3 -I $OXOS_DIR/tools/run.py tools/xemu/bios/oxos_serial_256k.bin --iso too
 **Kernel-call trace** (what the game called last before a crash): build a tracing kernel and run it with its map:
 
 ```sh
-make -C $OXOS_DIR/kernel BUILD=/tmp/rb_trace SELFTEST=0 TRACE_IMPORTS=2 SERIAL=1 /tmp/rb_trace/bios.bin
-tools/xemu/run_game.sh build/RedBaboon --bios /tmp/rb_trace/bios.bin --memory 128 \
-    -- --trace-map /tmp/rb_trace/xboxkrnl.map --dump-dir tools/xemu/run/logs
+make -C third_party/oxos/kernel BUILD=$PWD/build/oxos/trace SELFTEST=0 TRACE_IMPORTS=2 SERIAL=1 \
+    $PWD/build/oxos/trace/bios.bin
+tools/xemu/run_game.sh build/RedBaboon --bios build/oxos/trace/bios.bin --memory 128 \
+    -- --trace-map build/oxos/trace/xboxkrnl.map --dump-dir tools/xemu/run/logs
 ```
 
 On a crash it prints the game's last 30 kernel calls and saves all of them. TRACE_IMPORTS=2 needs `--memory 128`.

@@ -132,7 +132,15 @@ and **32 recordings** (4.7 GB). The console caught what an emulator never would:
 shown, a sound bug that left some boots silent, a stack overflow, and frame-time spikes. The game reached a steady 60
 fps on the real hardware, with sound on every boot.
 
+**Made possible by OXOS.** None of this test loop would exist without [OXOS](https://github.com/kooscode/oxos), the
+open-source Xbox kernel. The stock kernel throws away a game's debug output. OXOS's serial kernel sends it, with its
+own log and a full register and stack dump on any crash, out of COM1 to the PC, on the console and in xemu alike.
+Its netboot and FTP app put each build on the console with no one there, and its open BIOS images boot xemu without
+an MCPX boot ROM. Every hardware bug above was tracked down from those serial logs: they were the only view inside
+the game running on a real Xbox. Thank you, OXOS!
+
 ## Credits and license
 
-RedBaboon is GPL-2.0 ([`LICENSE`](LICENSE)). Built with [nxdk](https://github.com/XboxDev/nxdk) (pbkit, the
-toolchain and runtime) and [nxdk-sdl3](https://github.com/Ryzee119/nxdk-sdl3) ([SDL3](https://libsdl.org) for nxdk).
+RedBaboon is GPL-2.0 ([`LICENSE`](LICENSE)). Tested on the [OXOS](https://github.com/kooscode/oxos) kernel. Built with
+[nxdk](https://github.com/XboxDev/nxdk) (pbkit, the toolchain and runtime) and
+[nxdk-sdl3](https://github.com/Ryzee119/nxdk-sdl3) ([SDL3](https://libsdl.org) for nxdk).

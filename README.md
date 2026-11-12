@@ -14,7 +14,16 @@ bonus points, and bring down their zeppelin, the Silverback.
   `default.xbe` with no data files.
 - Its own renderer on the NV2A through pbkit, at 60 fps in 480p (480i without the HDTV pack). Its own synthesizer and
   mixer drive the AC'97 on a console and play through an APU voice in xemu.
-- Runs on a real Xbox and in [xemu](https://xemu.app).
+- Runs in [xemu](https://xemu.app) and on any original Xbox that runs homebrew.
+
+## Try it now
+
+Download the latest build from [Releases](https://github.com/kooscode/redbaboon/releases/latest):
+
+- **xemu:** `RedBaboon.iso`. Load it with Machine > Load Disc. Keep xemu's "Use DSP" audio setting off (the default),
+  or the game is silent.
+- **Xbox:** `default.xbe`. Copy it into a folder of its own on the console (e.g. `F:\Games\RedBaboon\default.xbe`)
+  and start it from your dashboard. Works on every console revision (1.0-1.6) with a softmod or modchip.
 
 ## Controls
 
@@ -63,7 +72,7 @@ Then:
 
 Everything a build writes goes under `build/`.
 
-## Running
+## Running your own build
 
 - **xemu:** load `build/RedBaboon.iso` (Machine > Load Disc). Keep xemu's "Use DSP" audio setting off (the default),
   or the game is silent.

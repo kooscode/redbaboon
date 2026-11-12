@@ -5,6 +5,7 @@
 /local.mk
 /local_notes.md
 /WORKLOG.md
+/claude-resume.sh
 
 # Recordings and serial logs from test runs
 /captures/

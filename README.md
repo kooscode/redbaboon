@@ -132,6 +132,9 @@ and **32 recordings** (4.7 GB). The console caught what an emulator never would:
 shown, a sound bug that left some boots silent, a stack overflow, and frame-time spikes. The game reached a steady 60
 fps on the real hardware, with sound on every boot.
 
+<a href="https://github.com/kooscode/oxos"><img src="docs/images/oxos_boot.jpg" width="240" align="right"
+    alt="The OXOS boot screen"></a>
+
 **Made possible by OXOS.** None of this test loop would exist without [OXOS](https://github.com/kooscode/oxos), the
 open-source Xbox kernel. The stock kernel throws away a game's debug output. OXOS's serial kernel sends it, with its
 own log and a full register and stack dump on any crash, out of COM1 to the PC, on the console and in xemu alike.

@@ -1,0 +1,86 @@
+// Vertex shader for lit 3D draws: sun diffuse + hemisphere ambient + Blinn-Phong specular + fresnel rim, emissive,
+// linear distance fog toward the horizon colour of the view direction. Unlit draws use unlit.vs.cg.
+// docs/design.md §5. Constants are bound to fixed registers (render_xbox.cpp uploads them there); write no numeric
+// literals here: cgc would put them in a register of its own that nothing uploads. Use k instead.
+//
+// Output for the combiners (combine.ps.cg: rgb = texture * COLOR0 * 2 + COLOR1; detail.ps.cg: rgb = COLOR0 * 2 *
+// 2 * texture * 2 * detail + COLOR1; alpha = texture.a * COLOR0.a):
+//   COLOR0.rgb = vertex colour * tint * light * (1 - fog) / 2   (halved for overbright headroom)
+//   COLOR1.rgb = (specular + emissive + rim) * (1 - fog) + fog colour * fog
+//   TEXCOORD0 = uv + uv offset, TEXCOORD1 = uv * detail scale + detail offset
+
+struct vIn {
+    float4 pos : POSITION;
+    float4 norm : NORMAL;
+    float4 col : COLOR;
+    float4 tex : TEXCOORD0;
+};
+
+struct vOut {
+    float4 pos : POSITION;
+    float4 col : COLOR0;
+    float4 spec : COLOR1;
+    float4 tex0 : TEXCOORD0;
+    float4 tex1 : TEXCOORD1;
+};
+
+vOut main(vIn I,
+          uniform float4x4 viewProj : C0,     // world -> screen (viewport folded in)
+          uniform float4 cameraPos : C4,
+          uniform float4 sunDir : C5,         // toward the sun
+          uniform float4 sunColor : C6,
+          uniform float4 k : C10,             // 0, 1, 0.5, 2
+          uniform float4 horizonAway : C11,   // horizon colour away from the sun
+          uniform float4x4 model : C12,
+          uniform float4 tint : C16,          // rgb halved (overbright headroom), alpha as is
+          uniform float4 emissive : C17,      // xyz: emissive colour, w: 1 / model scale
+          uniform float4 material : C18,      // x: specular, y: shininess, zw: fog = saturate(distance * z + w)
+          uniform float4 draw : C19,          // xy: uv offset, z: fog colour scale (0 for additive), w: (unlit)
+          uniform float4 rimColor : C20,      // xyz: rim colour times its strength, w: rim growth per metre
+          uniform float4 detail : C21,        // xy: detail uv scale, zw: detail uv offset
+          uniform float4 ambientMid : C22,    // (sky + ground ambient) / 2, per draw
+          uniform float4 ambientHalf : C23,   // (sky - ground ambient) / 2: ambient = mid + half * normal.y
+          uniform float4 underwater : C25,    // alpha *= min(world y * x + y, 1)
+          uniform float4 horizonDelta : C26,  // horizon colour toward the sun minus horizonAway
+          uniform float4 sunXZ : C27,         // sun direction flattened to the ground plane, unit length
+          uniform float4 glowParams : C28,    // x, y: sun glow = saturate(cos(angle to sun) * x + y)^2
+          uniform float4 glowColor : C29)
+{
+    vOut r;
+    float4 world = mul(I.pos, model);
+    // Normals are unit length in the mesh; emissive.w undoes the model matrix's (uniform) scale.
+    float3 n = mul(I.norm.xyz, (float3x3)model) * emissive.w;
+    float3 toEye = cameraPos.xyz - world.xyz;
+    float invDist = rsqrt(dot(toEye, toEye));
+    float3 v = toEye * invDist;
+    float dist = dot(toEye, v);
+
+    float3 h = normalize(v + sunDir.xyz);
+    float4 lt = lit(dot(n, sunDir.xyz), dot(n, h), material.y);
+    float3 light = ambientMid.xyz + ambientHalf.xyz * n.y + sunColor.xyz * lt.y;
+    // Rim: (1 - n.v)^3, so only the last few degrees of a silhouette catch it, not whole wing edges; it grows with
+    // distance (rimColor.w per metre) so small far planes still read against the ground.
+    float facing = k.y - dot(n, v);
+    float rim = facing * facing * facing * (dist * rimColor.w + k.y);
+
+    // Fog toward the sky's horizon colour in the view direction. The view direction is not flattened: near the
+    // horizon, where fogged ground meets the sky, it is already flat. lit() clamps and squares the glow.
+    float fog = min(max(dist * material.z + material.w, k.x), k.y);
+    float keep = k.y - fog;
+    float sunward = max(-dot(v, sunXZ.xyz), k.x);
+    float4 glow = lit(k.y, -dot(v, sunDir.xyz) * glowParams.x + glowParams.y, k.w);
+    float3 sky = horizonAway.xyz + horizonDelta.xyz * (sunward * sunward) + glowColor.xyz * glow.z;
+
+    float4 c = I.col * tint;
+    float spec = lt.z * material.x;
+    r.col.rgb = c.rgb * light * keep;
+    // Below the sea the alpha fades out (sunken wrecks; with alpha test they vanish at half the fade depth).
+    r.col.a = (c.a + spec) * min(world.y * underwater.x + underwater.y, k.y);
+    r.spec.rgb = (sunColor.xyz * spec + emissive.xyz + rimColor.xyz * rim) * keep + sky * (fog * draw.z);
+    r.tex0 = float4(I.tex.xy + draw.xy, k.x, k.y);
+    r.tex1 = float4(I.tex.xy * detail.xy + detail.zw, k.x, k.y);
+
+    float4 p = mul(world, viewProj);
+    r.pos = float4(p.xyz / p.w, p.w);
+    return r;
+}

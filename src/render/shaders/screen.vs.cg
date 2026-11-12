@@ -1,0 +1,26 @@
+// Vertex shader for the 2D overlay: positions are already in screen pixels. Same combiner as the 3D path
+// (texture * COLOR0 * 2 + COLOR1), so the colour is halved here and COLOR1 is black.
+// Write no numeric literals here (see mesh.vs.cg); k is uploaded by render_xbox.cpp.
+
+struct vIn {
+    float4 pos : POSITION;
+    float4 col : COLOR;
+    float4 tex : TEXCOORD0;
+};
+
+struct vOut {
+    float4 pos : POSITION;
+    float4 col : COLOR0;
+    float4 spec : COLOR1;
+    float4 tex0 : TEXCOORD0;
+};
+
+vOut main(vIn I, uniform float4 k : C10)  // 0, 1, 0.5, 2
+{
+    vOut r;
+    r.pos = float4(I.pos.xy, k.x, k.y);
+    r.col = float4(I.col.rgb * k.z, I.col.a);
+    r.spec = k.xxxy;
+    r.tex0 = float4(I.tex.xy, k.x, k.y);
+    return r;
+}

@@ -1,0 +1,24 @@
+# Everything a build writes (make clean removes it)
+/build/
+
+# This machine's paths and notes (see the top of Makefile)
+/local.mk
+/local_notes.md
+/WORKLOG.md
+
+# Recordings and serial logs from test runs
+/captures/
+
+# The xemu rig's kernels, disk and run folder (docs/xemu.md §1)
+/tools/xemu/bios/
+/tools/xemu/disk/
+/tools/xemu/run/
+/tools/xemu/run.lock
+
+# Python and editor leftovers
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+*.swp
+*~

@@ -1,0 +1,69 @@
+// Vertex shader for unlit 3D draws (terrain with lighting baked into its vertex colours, the sky, billboards,
+// streaks, decals): vertex colour * tint, emissive, depth bias and the same fog as mesh.vs.cg in about half the
+// instructions. docs/design.md §5. Constants and outputs as in mesh.vs.cg; write no numeric literals here (use k).
+
+struct vIn {
+    float4 pos : POSITION;
+    float4 col : COLOR;
+    float4 tex : TEXCOORD0;
+};
+
+struct vOut {
+    float4 pos : POSITION;
+    float4 col : COLOR0;
+    float4 spec : COLOR1;
+    float4 tex0 : TEXCOORD0;
+    float4 tex1 : TEXCOORD1;
+};
+
+vOut main(vIn I,
+          uniform float4x4 viewProj : C0,
+          uniform float4 cameraPos : C4,
+          uniform float4 sunDir : C5,
+          uniform float4 k : C10,
+          uniform float4 horizonAway : C11,
+          uniform float4x4 model : C12,
+          uniform float4 tint : C16,
+          uniform float4 emissive : C17,
+          uniform float4 material : C18,
+          uniform float4 draw : C19,          // w: depth bias (metres)
+          uniform float4 rimColor : C20,      // w: depth bias growth (metres per metre of distance)
+          uniform float4 detail : C21,
+          uniform float4 fade : C24,          // alpha *= saturate(distance * x + y) * saturate(distance * z + w)
+          uniform float4 underwater : C25,    // alpha *= min(world y * x + y, 1)
+          uniform float4 horizonDelta : C26,
+          uniform float4 sunXZ : C27,
+          uniform float4 glowParams : C28,
+          uniform float4 glowColor : C29)
+{
+    vOut r;
+    float4 world = mul(I.pos, model);
+    float3 toEye = cameraPos.xyz - world.xyz;
+    float invDist = rsqrt(dot(toEye, toEye));
+    float3 v = toEye * invDist;
+    float dist = dot(toEye, v);
+
+    // Depth bias: sliding along the view ray keeps the pixel position and moves the depth toward the eye. It grows
+    // with distance because depth precision falls with it.
+    world.xyz = world.xyz + v * (dist * rimColor.w + draw.w);
+
+    float fog = min(max(dist * material.z + material.w, k.x), k.y);
+    float keep = k.y - fog;
+    float sunward = max(-dot(v, sunXZ.xyz), k.x);
+    float4 glow = lit(k.y, -dot(v, sunDir.xyz) * glowParams.x + glowParams.y, k.w);
+    float3 sky = horizonAway.xyz + horizonDelta.xyz * (sunward * sunward) + glowColor.xyz * glow.z;
+
+    float4 c = I.col * tint;
+    r.col.rgb = c.rgb * keep;
+    // Distance fade (prop LODs): with alpha test the part beyond the fade's midpoint disappears.
+    float fadeIn = min(max(dist * fade.x + fade.y, k.x), k.y);
+    float fadeOut = min(max(dist * fade.z + fade.w, k.x), k.y);
+    r.col.a = c.a * fadeIn * fadeOut * min(world.y * underwater.x + underwater.y, k.y);
+    r.spec.rgb = emissive.xyz * keep + sky * (fog * draw.z);
+    r.tex0 = float4(I.tex.xy + draw.xy, k.x, k.y);
+    r.tex1 = float4(I.tex.xy * detail.xy + detail.zw, k.x, k.y);
+
+    float4 p = mul(world, viewProj);
+    r.pos = float4(p.xyz / p.w, p.w);
+    return r;
+}

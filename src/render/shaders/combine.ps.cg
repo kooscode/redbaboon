@@ -1,0 +1,17 @@
+// Register combiner setup shared by every draw: rgb = texture * COLOR0 * 2 + COLOR1, alpha = texture.a * COLOR0.a.
+// The vertex shaders put lighting (halved) in COLOR0 and specular, emissive, rim and fog in COLOR1.
+
+struct vOut {
+    float4 col : COLOR0;
+    float4 spec : COLOR1;
+    float4 tex0 : TEXCOORD0;
+};
+
+float4 main(vOut I, uniform sampler2D colorMap) : COLOR
+{
+    float4 t = tex2D(colorMap, I.tex0.xy);
+    float4 r;
+    r.rgb = t.rgb * I.col.rgb * 2 + I.spec.rgb;
+    r.a = t.a * I.col.a;
+    return r;
+}

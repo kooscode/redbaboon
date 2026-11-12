@@ -1,0 +1,20 @@
+// Register combiner setup for draws with a detail texture (terrain, sea): both textures modulate at 2x, so mid
+// grey (0x80) leaves the colour unchanged, and their mip chains fade to neutral with distance (no shimmer):
+// rgb = COLOR0 * 2 * (2 * texture) * (2 * detail) + COLOR1, alpha = texture.a * COLOR0.a.
+
+struct vOut {
+    float4 col : COLOR0;
+    float4 spec : COLOR1;
+    float4 tex0 : TEXCOORD0;
+    float4 tex1 : TEXCOORD1;
+};
+
+float4 main(vOut I, uniform sampler2D baseMap, uniform sampler2D detailMap) : COLOR
+{
+    float4 t0 = tex2D(baseMap, I.tex0.xy);
+    float4 t1 = tex2D(detailMap, I.tex1.xy);
+    float4 r;
+    r.rgb = (I.col.rgb * t0.rgb * 2) * t1.rgb * 4 + I.spec.rgb;
+    r.a = t0.a * I.col.a;
+    return r;
+}

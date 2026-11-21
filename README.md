@@ -1,5 +1,11 @@
 # RedBaboon
 
+<p align="center">
+  <img src="docs/images/cover.jpg" width="440" alt="RedBaboon cover art: Captain Red Baboon in his crimson fighter,
+    gorilla pirates and the zeppelin Silverback over Isla Platano">
+  <br><sub>Cover art. Everything in the game itself is made by code (see below).</sub>
+</p>
+
 A 3D arcade dogfighting game for the original Xbox, written in C++20 with [nxdk](https://github.com/XboxDev/nxdk).
 
 You are Captain "Red" Baboon, a flying ace in a crimson fighter. Gorilla sky pirates are raiding the banana
@@ -39,7 +45,7 @@ Download the latest build from [Releases](https://github.com/kooscode/redbaboon/
 | Y (hold) | Look back |
 | White / Black | Chase / close chase camera |
 | Start | Pause |
-| Back | Objective and score |
+| Back | Objective and score; on the title screen, quit to the dashboard |
 
 The full list is in [docs/design.md](docs/design.md) §3; the game shows it too, before the mission starts.
 
@@ -68,6 +74,7 @@ Then:
 | `make preview` | renders the procedural meshes and textures to PNG files in `build/preview/` |
 | `make audio_render` | renders every sound effect and music track to WAV files in `build/audio/` |
 | `make audio_game` | runs the game's audio through a whole mission on the PC: `build/audio/game_path.wav` |
+| `make release` | `build/release/RedBaboon/`: `RedBaboon.iso` plus OXOS's ISO launcher as `default.xbe` |
 | `make ftp_app` | the OXOS FTP app the hardware rig netboots: `build/FtpServer/` |
 | `make nxdk_tools` | builds nxdk's tools in `third_party/nxdk` (once, after cloning) |
 | `make clean` | deletes `build/` |
@@ -101,8 +108,8 @@ Everything a build writes goes under `build/`.
 | `tools/preview/` | host preview of the procedural content (a small software rasteriser) |
 | `tools/xemu/`, `tools/hardware/` | the xemu and real-Xbox test rigs |
 | `docs/` | design, C++ style, the rigs, and the creative brief and reviews (`docs/creative/`) |
-| `third_party/nxdk/` | [nxdk](https://github.com/kooscode/nxdk) with a pbkit cold-boot fix (submodule) |
-| `third_party/nxdk-sdl3/` | SDL3 for nxdk (submodule) |
+| `third_party/nxdk/` | [nxdk](https://github.com/kooscode/nxdk) `oxos`: -O2, faster pdclib, pbkit fix (submodule) |
+| `third_party/nxdk-sdl3/` | [SDL3 for nxdk](https://github.com/kooscode/nxdk-sdl3) (submodule) |
 | `third_party/oxos/` | [OXOS](https://github.com/kooscode/oxos): xemu launcher, netboot, FTP app (submodule) |
 
 The code follows [docs/cpp_style.md](docs/cpp_style.md).

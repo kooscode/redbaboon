@@ -86,8 +86,8 @@ void DrawTitleScene(float alpha);
 // --- Menus and screens (menus.cpp)
 
 void DrawLoading(const char* what, float fraction);
-// Overlay on the title scene: logo and PRESS START.
-void DrawTitleScreen(float time);
+// Overlay on the title scene: logo, PRESS START, BACK TO QUIT and the game's version (e.g. "0.03").
+void DrawTitleScreen(float time, const char* version);
 // Overlay on the title scene: the mission briefing.
 void DrawBriefing(float time);
 // Overlay on the paused mission; selection: 0 Resume, 1 Invert Y, 2 Controls, 3 Restart, 4 Quit.

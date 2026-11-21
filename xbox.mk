@@ -22,21 +22,21 @@ override OBJS = $(patsubst $(ROOT)/%,$(OBJ_DIR)/%.obj,$(basename $(SRCS)))
 override SHADER_OBJS = $(patsubst $(SHADER_DIR)/%.vs.cg,$(GEN_DIR)/shaders/%.inl,$(wildcard $(SHADER_DIR)/*.vs.cg)) \
                        $(patsubst $(SHADER_DIR)/%.ps.cg,$(GEN_DIR)/shaders/%.inl,$(wildcard $(SHADER_DIR)/*.ps.cg))
 
-CXXFLAGS += -std=c++20 -I$(ROOT)/src -I$(GEN_DIR) -O2 -Wall -Wno-unused-function
+# Optimisation comes from nxdk (third_party/nxdk, the kooscode fork): -O2 for the title, SDL3 and nxdk's own
+# libraries (pdclib, libc++, pbkit, the HAL), or none with DEBUG=y.
+CXXFLAGS += -std=c++20 -I$(ROOT)/src -I$(GEN_DIR) -Wall -Wno-unused-function
 # The main thread's stack: nxdk's default 64 KB had about 1 KB to spare (a 1 KB buffer in main overflowed it into
 # an exception in the title scene, 2026-11-11), so 256 KB.
 LDFLAGS += -stack:262144
 
 include $(NXDK_DIR)/Makefile
 
-# SDL3 for the controller and timers only (a submodule: git submodule update --init --recursive). nxdk's compiler
-# adds no -O, so its objects get -O2 here.
+# SDL3 for the controller and timers only (a submodule: git submodule update --init --recursive).
 ifeq ($(SDL3),y)
 override SDL3_OBJS = $(patsubst $(ROOT)/%,$(OBJ_DIR)/%.obj,$(basename $(SDL3_SRCS)))
 include $(ROOT)/third_party/nxdk-sdl3/config_sdl.make
 CFLAGS += $(SDL3_FLAGS)
 CXXFLAGS += $(SDL3_FLAGS)
-$(SDL3_OBJS): CFLAGS += -O2
 main.exe: libSDL3.lib
 endif
 

@@ -11,8 +11,10 @@
 #include "game/game.h"
 #include "platform/input.h"
 #include "render/render.h"
+#include "version.h"
 
 #include <SDL3/SDL.h>
+#include <hal/xbox.h>
 #include <windows.h>
 
 #include <math.h>
@@ -30,6 +32,7 @@ constexpr float RESULTS_MIN_TIME = 3.0f;  // seconds before the results can be d
 constexpr float AUTOPLAY_RESULTS_TIME = 10.0f; // autoplay shows the results this long before the next mission
 constexpr float AUTOPLAY_BRIEFING_TIME = 6.0f; // and the briefing (controls diagram) this long before each mission
 constexpr float STICK_MENU = 0.5f;        // stick deflection that moves a menu cursor
+constexpr float QUIT_FADE = 0.4f;         // seconds of fade to black and silence before the dashboard
 constexpr const char* AUTOPLAY_FILE = "D:\\autoplay.txt";
 constexpr int AUTOPLAY_FILE_MAX = 1024;   // bytes of autoplay.txt read (settings beyond are ignored)
 constexpr int STATS_FRAMES = 600;         // autoplay logs the frame rate every this many frames
@@ -46,6 +49,7 @@ enum class Screen {
     AUTOPLAY_RESULTS, // autoplay holds the results (or defeat) screen, then flies again
     AUTOPLAY_BRIEFING, // autoplay shows the briefing before each mission, so recordings include it
     CONTROLS,         // the controls diagram, from the pause menu
+    QUITTING,         // BACK on the title: fades out, then returns to the dashboard
 };
 
 struct App {
@@ -192,8 +196,12 @@ void FrameTitle(const input::State& pad, float dt)
 {
     app.idleTime = AnyInput(pad) ? 0.0f : app.idleTime + dt;
     if (app.screen == Screen::TITLE) {
-        if (Confirm(pad))
+        if (Confirm(pad)) {
             Go(Screen::BRIEFING);
+        } else if (Pressed(pad, input::Button::BACK)) {
+            audio::Play(audio::Sfx::MENU_SELECT, 0.8f);
+            Go(Screen::QUITTING);
+        }
         else if (app.idleTime > ATTRACT_DELAY)
             ToMission(Screen::DEMO);
         return;
@@ -332,6 +340,12 @@ void Frame(const input::State& pad, float dt)
         if (app.screenTime > AUTOPLAY_BRIEFING_TIME)
             ToMission(Screen::AUTOPLAY);
         break;
+    case Screen::QUITTING:
+        audio::SetMasterVolume(fmaxf(0.0f, 1.0f - app.screenTime / QUIT_FADE));
+        // A null path launches the dashboard (nxdk sets the launch data to LDT_LAUNCH_DASHBOARD); it does not return.
+        if (app.screenTime > QUIT_FADE)
+            XLaunchXBE(nullptr);
+        break;
     }
 }
 
@@ -343,6 +357,7 @@ void Step(const input::State& pad)
     case Screen::TITLE:
     case Screen::BRIEFING:
     case Screen::AUTOPLAY_BRIEFING:
+    case Screen::QUITTING:
         game::UpdateTitle(game::STEP);
         break;
     case Screen::PLAYING:
@@ -368,8 +383,17 @@ void Draw(float alpha)
     switch (app.screen) {
     case Screen::TITLE:
         game::DrawTitleScene(alpha);
-        game::DrawTitleScreen(app.screenTime);
+        game::DrawTitleScreen(app.screenTime, VERSION);
         break;
+    case Screen::QUITTING: {
+        game::DrawTitleScene(alpha);
+        game::DrawTitleScreen(1.0f + app.screenTime, VERSION);
+        float black = fminf(1.0f, app.screenTime / QUIT_FADE);
+        float width = static_cast<float>(render::ScreenWidth());
+        float height = static_cast<float>(render::ScreenHeight());
+        render::DrawRect(0.0f, 0.0f, width, height, static_cast<uint32_t>(black * 255.0f) << 24);
+        break;
+    }
     case Screen::BRIEFING:
     case Screen::AUTOPLAY_BRIEFING:
         game::DrawTitleScene(alpha);
@@ -456,7 +480,9 @@ bool ReadAutoplay()
 
 int main()
 {
-    DebugLine("start");
+    char start[48];
+    snprintf(start, sizeof(start), "start, version %s", VERSION);
+    DebugLine(start);
     if (!render::Init()) {
         DebugLine("render init failed");
         return 1;

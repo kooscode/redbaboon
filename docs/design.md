@@ -59,7 +59,7 @@ Mission flow (game/mission.cpp drives it; each phase shows an objective line and
 | Y | Look back |
 | White / Black | Camera: chase / close chase |
 | Start | Pause menu (Resume, Invert Y, Restart, Quit) |
-| Back | Show mission objective and the score so far |
+| Back | Show mission objective and the score so far; on the title screen, quit to the dashboard |
 
 ## 4. Shared conventions (src/core/)
 

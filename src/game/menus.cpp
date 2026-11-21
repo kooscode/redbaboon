@@ -12,6 +12,8 @@ constexpr uint32_t BRASS = 0xFFC9A227;
 constexpr uint32_t CRIMSON = 0xFFB3202A;
 constexpr uint32_t PANEL = 0x991A1410;    // 60 % ink: the scene stays visible behind panels
 constexpr uint32_t DIM = 0x801A1410;
+constexpr float SAFE_X = 32.0f;            // the title-safe margins (docs/creative/brief.md §6)
+constexpr float SAFE_Y = 24.0f;
 constexpr int RESULTS_ROWS = 7;
 constexpr float RESULTS_FIRST_ROW = 0.5f;   // seconds before the first row counts up
 constexpr float RESULTS_ROW_GAP = 0.25f;
@@ -111,7 +113,7 @@ void DrawLoading(const char* what, float fraction)
     HudTextCentered(w * 0.5f, h - 64.0f, 1, 0xFFA89A80, "TIP: BARREL ROLLS DODGE BULLETS");
 }
 
-void DrawTitleScreen(float time)
+void DrawTitleScreen(float time, const char* version)
 {
     float alpha = Clamp(time * 0.8f, 0.0f, 1.0f);
     Logo(Height() * 0.16f, alpha);
@@ -119,6 +121,14 @@ void DrawTitleScreen(float time)
     float pulse = 0.55f + 0.45f * sinf(time * 2.0f * PI * 0.8f);
     uint32_t a = static_cast<uint32_t>(pulse * alpha * 255.0f);
     HudTextCentered(Width() * 0.5f, Height() * 0.72f, 2, (a << 24) | (CREAM & 0x00FFFFFF), "PRESS START");
+    // The bottom corners, inside the title-safe area: how to leave, and the version.
+    uint32_t corner = static_cast<uint32_t>(alpha * 0.8f * 255.0f) << 24;
+    float y = Height() - SAFE_Y - 16.0f;
+    HudText(SAFE_X, y, 2, corner | (CREAM & 0x00FFFFFF), "BACK TO QUIT");
+    char text[24];
+    snprintf(text, sizeof(text), "V%s", version);
+    HudText(Width() - SAFE_X - static_cast<float>(render::TextWidth(2.0f, text)), y, 2, corner | (BRASS & 0x00FFFFFF),
+            text);
 }
 
 // A button prompt centred on cx: words, the button glyph, words ("PRESS (A) TO FLY"), gently pulsing.
